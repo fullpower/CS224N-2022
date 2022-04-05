@@ -55,7 +55,8 @@ Don't change above here; write your code below
 """
 
 if args.variant == 'vanilla':
-    pass # TODO [part c]: Make some model here
+    # [part c]: Make some model here
+    model = model.GPT(mconf)
 elif args.variant == 'synthesizer':
     pass # TODO [part g]: Make some other model here
 
@@ -112,7 +113,33 @@ elif args.function == 'finetune':
     #         warmup_tokens=512*20
     #         final_tokens=200*len(pretrain_dataset)*block_size
     #         num_workers=4
-    raise NotImplementedError
+    
+    if args.reading_params_path is None:
+        tconf = trainer.TrainerConfig(max_epochs=75,
+                                      batch_size=256,
+                                      learning_rate=6e-4,
+                                      lr_decay=True,
+                                      warmup_tokens=512*20,
+                                      final_tokens=200*len(pretrain_dataset)*block_size,
+                                      num_workers=4)
+    else:
+        model.load_state_dict(torch.load(args.reading_params_path))
+        tconf = trainer.TrainerConfig(max_epochs=10,
+                                      batch_size=256,
+                                      learning_rate=6e-4,
+                                      lr_decay=True,
+                                      warmup_tokens=512*20,
+                                      final_tokens=200*len(pretrain_dataset)*block_size,
+                                      num_workers=4)
+    model = model.to(device)
+
+    finetune_corpus = open(args.finetune_corpus_path).read()
+    finetune_dataset = dataset.NameDataset(pretrain_dataset, finetune_corpus)
+    trainer = trainer.Trainer(model, finetune_dataset, None, tconf)
+    trainer.train()
+
+    torch.save(model.state_dict(), args.writing_params_path)
+
 elif args.function == 'evaluate':
     assert args.outputs_path is not None
     assert args.reading_params_path is not None
