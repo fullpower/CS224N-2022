@@ -2,6 +2,7 @@ import random
 import torch
 from torch.utils.data import Dataset
 import argparse
+import numpy as np
 
 """
 The input-output pairs (x, y) of the NameDataset are of the following form:
@@ -168,7 +169,24 @@ class CharCorruptionDataset(Dataset):
 
     def __getitem__(self, idx):
         # TODO [part e]: see spec above
-        raise NotImplementedError
+        document = self.data[idx]
+        trunc_length = np.random.randint(4, int(self.block_size*7/8 + 1))
+        document = document[:trunc_length]
+        masked_length = int(trunc_length * np.random.normal(0.25, 0.05))
+        masked_length = np.clip(masked_length, 1, trunc_length - 2)
+        masked_idx = np.random.randint(1, trunc_length - masked_length)
+        prefix = document[:masked_idx]
+        masked_content = document[masked_idx:masked_idx+masked_length]
+        suffix = document[masked_idx+masked_length:]
+
+        x = prefix + self.MASK_CHAR + suffix + self.MASK_CHAR + masked_content + self.MASK_CHAR
+        x = x + self.PAD_CHAR*(self.block_size - len(x))
+
+        y = x[1:]
+        x = x[:-1]
+        x = torch.tensor([self.stoi[c] for c in x], dtype=torch.long)
+        y = torch.tensor([self.stoi[c] for c in y], dtype=torch.long)
+        return x, y
 
 """
 Code under here is strictly for your debugging purposes; feel free to modify
