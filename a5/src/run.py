@@ -58,7 +58,9 @@ if args.variant == 'vanilla':
     # [part c]: Make some model here
     model = model.GPT(mconf)
 elif args.variant == 'synthesizer':
-    pass # TODO [part g]: Make some other model here
+    # TODO [part g]: Make some other model here
+    mconf.synthesizer = True
+    model = model.GPT(mconf)
 
 # From here on, your code should be identical independent of which
 # variant (vanilla or synthesizer) has been chosen.
@@ -156,6 +158,7 @@ elif args.function == 'evaluate':
     assert args.reading_params_path is not None
     assert args.eval_corpus_path is not None
     model.load_state_dict(torch.load(args.reading_params_path))
+    model = model.to(device)
     correct = 0
     total = 0
     with open(args.outputs_path, 'w') as fout:
